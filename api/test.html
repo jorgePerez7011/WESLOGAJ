@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Test Registro de Estudiante</h2>
+<script>
+async function testRegister() {
+    try {
+        const response = await fetch('http://localhost:3000/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: 'Test Student',
+                email: 'test@test.com',
+                password: '123456',
+                phone: '1234567890',
+                document_type: 'CC',
+                document_number: '123456789',
+                country: 'Colombia'
+            })
+        });
+        const data = await response.json();
+        console.log('Respuesta:', data);
+        document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('result').textContent = 'Error: ' + error.message;
+    }
+}
+</script>
+
+<button onclick="testRegister()">Probar Registro</button>
+<pre id="result"></pre>
+
+</body>
+</html>

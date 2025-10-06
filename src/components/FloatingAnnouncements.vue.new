@@ -1,0 +1,115 @@
+<![CDATA[<template>
+  <div class="fixed top-4 left-4 z-50">
+    <TransitionGroup 
+      name="float" 
+      tag="div"
+    >
+      <div
+        v-for="announcement in visibleAnnouncements"
+        :key="announcement.id"
+        class="bg-white rounded-lg shadow-xl p-4 border-l-4 border-blue-500 w-[300px] relative overflow-hidden"
+      >
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="font-semibold text-gray-800">{{ announcement.title }}</h3>
+          <button
+            @click="dismissAnnouncement(announcement.id)"
+            class="text-gray-400 hover:text-gray-600 text-xl"
+          >
+            ×
+          </button>
+        </div>
+        <p class="text-sm text-gray-600">{{ announcement.message }}</p>
+        <!-- Barra de progreso -->
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-100">
+          <div
+            class="h-full bg-blue-500 transition-[width] duration-[7000ms] ease-linear"
+            :style="{ width: `${getProgressWidth(announcement)}%` }"
+          ></div>
+        </div>
+      </div>
+    </TransitionGroup>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+
+interface Announcement {
+  id: number;
+  title: string;
+  message: string;
+  timestamp: number;
+}
+
+const DISPLAY_TIME = 7000; // 7 segundos
+const visibleAnnouncements = ref<Announcement[]>([]);
+
+const props = defineProps<{
+  initialAnnouncements?: Omit<Announcement, 'timestamp'>[]
+}>();
+
+// Cola de anuncios pendientes
+let queue: Omit<Announcement, 'timestamp'>[] = [];
+
+onMounted(() => {
+  if (props.initialAnnouncements) {
+    queue = [...props.initialAnnouncements];
+    showNextAnnouncement();
+  }
+});
+
+const showNextAnnouncement = () => {
+  // Si la cola está vacía, reiniciarla
+  if (queue.length === 0 && props.initialAnnouncements) {
+    queue = [...props.initialAnnouncements];
+  }
+
+  if (queue.length > 0) {
+    // Tomar el primer anuncio de la cola
+    const nextAnnouncement = {
+      ...queue.shift()!,
+      timestamp: Date.now()
+    };
+
+    // Mostrar solo este anuncio
+    visibleAnnouncements.value = [nextAnnouncement];
+
+    // Programar su eliminación y mostrar el siguiente
+    setTimeout(() => {
+      dismissAnnouncement(nextAnnouncement.id);
+      showNextAnnouncement(); // Mostrar el siguiente anuncio
+    }, DISPLAY_TIME);
+  }
+};
+
+const dismissAnnouncement = (id: number) => {
+  visibleAnnouncements.value = visibleAnnouncements.value.filter(a => a.id !== id);
+};
+
+const getProgressWidth = (announcement: Announcement): number => {
+  const elapsed = Date.now() - announcement.timestamp;
+  const progress = 100 - (elapsed / DISPLAY_TIME) * 100;
+  return Math.max(0, Math.min(100, progress));
+};
+</script>
+
+<style scoped>
+.float-enter-active,
+.float-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.float-enter-from {
+  opacity: 0;
+  transform: translateX(-100px);
+}
+
+.float-leave-to {
+  opacity: 0;
+  transform: translateY(-30px);
+}
+
+.float-move {
+  transition: transform 0.5s ease;
+}
+</style>]]>

@@ -1,0 +1,367 @@
+`<template>
+  <!-- ... resto del template ... -->
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
+
+const tabs = [
+  { id: 'general', name: 'Información General' },
+  { id: 'contenido', name: 'Contenido del Curso' },
+  { id: 'estudiantes', name: 'Estudiantes Inscritos' }
+]
+
+const activeTab = ref('general')
+const loading = ref(false)
+const message = ref('')
+const error = ref(false)
+
+interface Resource {
+  id?: number
+  type: 'document' | 'video-url' | 'video-file' | 'link'
+  title: string
+  description?: string
+  url?: string
+  file?: File | null
+  name?: string
+}
+
+interface Module {
+  id?: number
+  title: string
+  description: string
+  resources: Resource[]
+}
+
+interface CourseData {
+  id?: number
+  name: string
+  description: string
+  course_type: string
+  duration: number
+  price: number
+  teacher_id: number
+  objectives: string
+  requirements: string
+  start_date: string
+  end_date: string
+  schedule: string
+  max_students: number
+  image_url?: string
+  modules: Module[]
+}
+
+interface Student {
+  id: number
+  name: string
+  email: string
+  enrollment_date: string
+  status: 'active' | 'inactive'
+}
+
+const courseData = ref<CourseData>({
+  name: '',
+  description: '',
+  course_type: '',
+  duration: 0,
+  price: 0,
+  teacher_id: 0,
+  objectives: '',
+  requirements: '',
+  start_date: '',
+  end_date: '',
+  schedule: '',
+  max_students: 0,
+  modules: []
+})
+
+const enrolledStudents = ref<Student[]>([])
+
+// Cargar datos del curso
+const loadCourseData = async () => {
+  const courseId = route.params.id
+  if (!courseId) return
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/courses/${courseId}`)
+    if (!response.ok) throw new Error('Error al cargar el curso')
+    
+    const data = await response.json()
+    if (data.success) {
+      courseData.value = data.course
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al cargar los datos del curso'
+    error.value = true
+  }
+}
+
+// Cargar estudiantes inscritos
+const loadEnrolledStudents = async () => {
+  const courseId = route.params.id
+  if (!courseId) return
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/courses/${courseId}/students`)
+    if (!response.ok) throw new Error('Error al cargar los estudiantes')
+    
+    const data = await response.json()
+    if (data.success) {
+      enrolledStudents.value = data.students
+    }
+  } catch (err) {
+    console.error('Error:', err)
+  }
+}
+
+// Funciones para gestionar módulos
+const addModule = async () => {
+  try {
+    const newModule = {
+      title: '',
+      description: '',
+      resources: []
+    }
+
+    // Agregar el módulo a la base de datos
+    const response = await fetch(`http://localhost:3000/api/courses/${route.params.id}/modules`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newModule)
+    })
+
+    if (!response.ok) throw new Error('Error al crear el módulo')
+
+    const data = await response.json()
+    if (data.success) {
+      // Agregar el módulo localmente con el ID devuelto por el servidor
+      courseData.value.modules.push({
+        ...newModule,
+        id: data.moduleId
+      })
+      message.value = 'Módulo creado exitosamente'
+      error.value = false
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al crear el módulo'
+    error.value = true
+  }
+}
+
+const removeModule = async (index: number) => {
+  const module = courseData.value.modules[index]
+  if (!module.id) return
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/modules/${module.id}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) throw new Error('Error al eliminar el módulo')
+
+    const data = await response.json()
+    if (data.success) {
+      courseData.value.modules.splice(index, 1)
+      message.value = 'Módulo eliminado exitosamente'
+      error.value = false
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al eliminar el módulo'
+    error.value = true
+  }
+}
+
+// Funciones para gestionar recursos
+const addResource = (moduleIndex: number, resourceType: 'document' | 'video-url' | 'video-file' | 'link') => {
+  const module = courseData.value.modules[moduleIndex]
+  
+  if (resourceType === 'document') {
+    module.resources.push({
+      type: 'document',
+      title: '',
+      file: null,
+      name: ''
+    })
+  } else if (resourceType === 'video-url') {
+    module.resources.push({
+      type: 'video-url',
+      title: '',
+      url: ''
+    })
+  } else if (resourceType === 'video-file') {
+    module.resources.push({
+      type: 'video-file',
+      title: '',
+      file: null,
+      name: ''
+    })
+  } else if (resourceType === 'link') {
+    module.resources.push({
+      type: 'link',
+      title: '',
+      url: '',
+      description: ''
+    })
+  }
+}
+
+const removeResource = (moduleIndex: number, resourceIndex: number) => {
+  courseData.value.modules[moduleIndex].resources.splice(resourceIndex, 1)
+}
+
+const handleFileUpload = (event: Event, moduleIndex: number, resourceIndex: number) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    const file = input.files[0]
+    const resource = courseData.value.modules[moduleIndex].resources[resourceIndex]
+    
+    if ((resource.type === 'document' && file.type.startsWith('application/')) ||
+        (resource.type === 'video-file' && file.type.startsWith('video/'))) {
+      resource.file = file
+      resource.name = file.name
+    } else {
+      alert('Por favor, seleccione un archivo válido')
+    }
+  }
+}
+
+const handleImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    const file = input.files[0]
+    if (file.type.startsWith('image/')) {
+      const formData = new FormData()
+      formData.append('image', file)
+      
+      // Subir la imagen
+      updateCourseImage(formData)
+    } else {
+      alert('Por favor, seleccione una imagen válida')
+    }
+  }
+}
+
+// Función para subir la imagen del curso
+const updateCourseImage = async (formData: FormData) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/courses/${route.params.id}/image`, {
+      method: 'POST',
+      body: formData
+    })
+    
+    if (!response.ok) throw new Error('Error al subir la imagen')
+    
+    const data = await response.json()
+    if (data.success) {
+      courseData.value.image_url = data.image_url
+      message.value = 'Imagen actualizada correctamente'
+      error.value = false
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al subir la imagen'
+    error.value = true
+  }
+}
+
+// Función para guardar los cambios del curso
+const saveCourse = async () => {
+  loading.value = true
+  message.value = ''
+  error.value = false
+
+  try {
+    const formData = new FormData()
+    
+    // Agregar los datos del curso
+    Object.entries(courseData.value).forEach(([key, value]) => {
+      if (key !== 'modules' && key !== 'image_url') {
+        formData.append(key, String(value))
+      }
+    })
+
+    // Agregar los módulos y recursos
+    formData.append('modules', JSON.stringify(courseData.value.modules))
+
+    const response = await fetch(`http://localhost:3000/api/courses/${route.params.id}`, {
+      method: 'PUT',
+      body: formData
+    })
+
+    if (!response.ok) throw new Error('Error al guardar los cambios')
+
+    const data = await response.json()
+    if (data.success) {
+      message.value = 'Cambios guardados correctamente'
+      error.value = false
+    } else {
+      throw new Error(data.message || 'Error al guardar los cambios')
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al guardar los cambios'
+    error.value = true
+  } finally {
+    loading.value = false
+  }
+}
+
+// Función para cambiar el estado de un estudiante
+const toggleStudentStatus = async (studentId: number) => {
+  try {
+    const student = enrolledStudents.value.find(s => s.id === studentId)
+    if (!student) return
+
+    const response = await fetch(`http://localhost:3000/api/enrollments/${studentId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: student.status === 'active' ? 'inactive' : 'active'
+      })
+    })
+
+    if (!response.ok) throw new Error('Error al actualizar el estado')
+
+    const data = await response.json()
+    if (data.success) {
+      student.status = student.status === 'active' ? 'inactive' : 'active'
+      message.value = 'Estado actualizado correctamente'
+      error.value = false
+    }
+  } catch (err) {
+    console.error('Error:', err)
+    message.value = 'Error al actualizar el estado del estudiante'
+    error.value = true
+  }
+}
+
+// Función para dar formato a la fecha
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+onMounted(() => {
+  loadCourseData()
+  loadEnrolledStudents()
+})
+</script>
+
+<style scoped>
+/* Estilos existentes */
+</style>`
