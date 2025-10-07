@@ -10,11 +10,14 @@
         {{ error }}
       </div>
 
-      <div v-else class="space-y-6">
-        <!-- Sección de video (lado izquierdo) -->
+     <div v-else class="space-y-6">
         <!-- Main content container -->
-        <div class="flex flex-col lg:flex-row gap-6">
-          <!-- Video section -->
+        <div class="flex flex-col xl:flex-row gap-6">
+          <!-- Contenido principal -->
+          <div class="flex-1">
+            <div class="flex flex-col lg:flex-row gap-6">
+          <div class="flex-1 flex flex-col lg:flex-row gap-6">
+            <!-- Video section -->
           <div v-if="selectedVideo" class="lg:w-2/3">
             <div class="bg-white shadow-lg rounded-lg overflow-hidden">
               <div class="aspect-w-16 aspect-h-9">
@@ -70,67 +73,148 @@
               </div>
             </div>
           </div>
+
+          <!-- Toggle del menú -->
+          <button @click="showMenu = !showMenu" 
+                  class="w-full flex items-center justify-center p-2 bg-gray-50 hover:bg-gray-100 transition-colors border-t border-b border-gray-200">
+            <span class="mr-2 text-sm font-medium text-gray-600">{{ showMenu ? 'Ocultar menú' : 'Mostrar menú' }}</span>
+            <svg class="w-5 h-5 text-gray-500 transform transition-transform" 
+                 :class="showMenu ? 'rotate-180' : ''" 
+                 fill="none" 
+                 stroke="currentColor" 
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          <!-- Menú del curso -->
+          <div v-show="showMenu" class="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-4 bg-white border-b border-gray-200">
+            <!-- Presentación -->
+            <button @click="toggleSection('presentacion')"
+                    class="flex flex-col items-center p-3 rounded-lg transition-colors"
+                    :class="activeSection === 'presentacion' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50'">
+              <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-sm font-medium">Presentación</span>
+            </button>
+
+            <!-- Guía del curso -->
+            <button @click="toggleSection('guia')"
+                    class="flex flex-col items-center p-3 rounded-lg transition-colors"
+                    :class="activeSection === 'guia' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50'">
+              <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span class="text-sm font-medium">Guía</span>
+            </button>
+
+            <!-- Quiz -->
+            <button @click="toggleSection('evaluacion')"
+                    class="flex flex-col items-center p-3 rounded-lg transition-colors"
+                    :class="activeSection === 'evaluacion' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50'">
+              <svg class="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-sm font-medium">Quiz</span>
+            </button>
+
+
+          </div>
           
-          <div class="p-6">
-            <!-- Información del estudiante -->
-            <div v-if="currentUser && currentUser.role === 'student'" class="mb-4">
-              <div class="flex items-center">
-                <img 
-                  :src="currentUser.profile_image ? `http://localhost:3000${currentUser.profile_image}` : '/vite.svg'"
-                  :alt="currentUser.name"
-                  class="w-12 h-12 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <h3 class="text-lg font-semibold">{{ currentUser.name }}</h3>
-                  <p class="text-gray-600">Estudiante inscrito</p>
+
+          
+          <!-- Contenido dinámico según la sección seleccionada -->
+          <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <!-- Sección de presentación -->
+            <div v-if="activeSection === 'presentacion' && showContent" class="p-6 transition-all duration-300">
+              <h2 class="text-xl font-bold mb-4">Presentación del Curso</h2>
+              <div class="prose max-w-none text-gray-600">
+                <p class="mb-4">{{ course.description }}</p>
+                <h3 class="text-lg font-semibold mb-2">¿Qué aprenderás?</h3>
+                <ul class="list-disc pl-5 mb-4">
+                  <li>Dominarás los conceptos fundamentales de la materia</li>
+                  <li>Desarrollarás habilidades prácticas aplicables</li>
+                  <li>Obtendrás certificación al completar el curso</li>
+                </ul>
+                <h3 class="text-lg font-semibold mb-2">Requisitos previos</h3>
+                <ul class="list-disc pl-5">
+                  <li>No se requieren conocimientos previos</li>
+                  <li>Acceso a un computador con conexión a internet</li>
+                  <li>Disposición para aprender</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Sección de guía -->
+            <div v-if="activeSection === 'guia' && showContent" class="p-6 transition-all duration-300">
+              <h2 class="text-xl font-bold mb-4">Guía del Curso</h2>
+              <div class="prose max-w-none text-gray-600">
+                <h3 class="text-lg font-semibold mb-2">Metodología</h3>
+                <p class="mb-4">Este curso utiliza un enfoque práctico y dinámico que combina:</p>
+                <ul class="list-disc pl-5 mb-6">
+                  <li>Videos explicativos de cada tema</li>
+                  <li>Material de lectura complementario</li>
+                  <li>Ejercicios prácticos guiados</li>
+                  <li>Foros de discusión y resolución de dudas</li>
+                </ul>
+                
+                <h3 class="text-lg font-semibold mb-2">Estructura del curso</h3>
+                <div class="space-y-4 mb-6">
+                  <div class="flex items-center">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">1</span>
+                    <span>Introducción a los conceptos básicos</span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">2</span>
+                    <span>Desarrollo de habilidades fundamentales</span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">3</span>
+                    <span>Aplicación práctica de conocimientos</span>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3">4</span>
+                    <span>Evaluación y certificación</span>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Contenido del curso -->
-            <div class="mt-4">
-              <h2 class="text-xl font-bold mb-2">Descripción del curso</h2>
-              <p class="text-gray-700">{{ course.description }}</p>
-              
-              <div class="mt-4 flex flex-wrap gap-4">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  {{ course.duration }} horas
-                </span>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  $ {{ course.price.toLocaleString() }}
-                </span>
+
+            <!-- Sección de evaluación (Quiz) -->
+            <div v-if="activeSection === 'evaluacion' && showContent" class="p-6 transition-all duration-300">
+              <h2 class="text-xl font-bold mb-4">Quiz del Curso</h2>
+              <div class="prose max-w-none text-gray-600">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                  <h3 class="text-blue-700 font-semibold mb-2">Información importante</h3>
+                  <p class="text-blue-600">El quiz es obligatorio para completar el curso y obtener tu certificación.</p>
+                </div>
+
+                <h3 class="text-lg font-semibold mb-2">Detalles del Quiz</h3>
+                <ul class="list-disc pl-5 mb-6">
+                  <li>20 preguntas de opción múltiple</li>
+                  <li>Tiempo límite: 45 minutos</li>
+                  <li>Calificación mínima para aprobar: 70%</li>
+                  <li>3 intentos disponibles</li>
+                </ul>
+
+                <h3 class="text-lg font-semibold mb-2">Recomendaciones</h3>
+                <ul class="list-disc pl-5 mb-6">
+                  <li>Revisa todo el material del curso antes de intentar el quiz</li>
+                  <li>Asegúrate de tener una conexión estable a internet</li>
+                  <li>Toma notas durante el curso para consultarlas</li>
+                </ul>
+
+                <div class="mt-6">
+                  <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Comenzar Quiz
+                  </button>
+                </div>
               </div>
             </div>
+
+
           </div>
-          
-          <!-- Contenido del curso organizado en secciones -->
-          <div class="bg-white shadow-lg rounded-lg overflow-hidden divide-y divide-gray-200">
-            <!-- Sección de descripción -->
-          <AccordionSection>
-            <template #icon>
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </template>
-            <template #title>Descripción del curso</template>
-            <div class="mt-4 text-gray-600">
-              <p>{{ course.description }}</p>
-              <div class="mt-4 flex flex-wrap gap-4">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {{ course.duration }} horas
-                </span>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                  $ {{ course.price?.toLocaleString() }}
-                </span>
-              </div>
-            </div>
-          </AccordionSection>
 
           <!-- Sección de módulos -->
           <div>
@@ -220,26 +304,18 @@
                 </AccordionSection>
               </div>
             </div>
+
+          
+
             
-            <div v-else class="text-center py-8 text-gray-500">
-              No hay módulos disponibles en este curso todavía.
-            </div>
           </div>
         </div>
-
-          <!-- Foro del curso -->
-          <div class="mt-8">
-            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-              <CourseForum
-                :courseId="route.params.id"
-                :currentUser="currentUser"
-              />
-            </div>
-          </div>
+        </div>
+        </div>
+        </div>
         </div>
       </div>
     </div>
-  </div>
   </div>
 </template>
 
@@ -259,6 +335,20 @@ const error = ref(null)
 const userStorage = localStorage.getItem('user')
 const currentUser = ref(userStorage ? JSON.parse(userStorage) : null)
 const selectedVideo = ref(null)
+const activeSection = ref('presentacion')
+const showMenu = ref(true) // El menú estará visible por defecto
+const showContent = ref(true) // Controla la visibilidad del contenido de la sección activa
+
+const toggleSection = (section) => {
+  if (activeSection.value === section) {
+    // Si hacemos clic en la sección activa, alternamos su visibilidad
+    showContent.value = !showContent.value
+  } else {
+    // Si cambiamos a una nueva sección, la mostramos
+    activeSection.value = section
+    showContent.value = true
+  }
+}
 
 // Initialize user role if not present
 if (currentUser.value && !currentUser.value.role) {

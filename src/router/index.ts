@@ -21,6 +21,7 @@ import NormasTransito from '../views/cursos/NormasTransito.vue'
 import TransporteSustanciasPeligrosas from '../views/cursos/TransporteSustanciasPeligrosas.vue'
 import GestionarCursoView from '../views/GestionarCursoView.vue'
 import CursoInscritoView from '../views/CursoInscritoView.vue'
+import InscripcionesView from '../views/InscripcionesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -133,6 +134,11 @@ const router = createRouter({
       name: 'ver-curso',
       component: CursoInscritoView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/inscripciones',
+      name: 'inscripciones',
+      component: InscripcionesView
     }
   ]
 })
